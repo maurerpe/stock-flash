@@ -3,7 +3,7 @@ Uses servicefile.xml or flashfile.xml and the fastboot utility to flash an andoi
 
 ## SYNOPSIS
 
-**stock-flash.pl** [**-f** *fastbootcmd*] [**-s** *devicepath*] [**-p**] *file.xml*
+**stock-flash.pl** [**-f** *fastbootcmd*] [**-s** *devicepath*] [**-o** *omissions*] [**-p**] *file.xml*
 **stock-flash.pl** {**-h**|**--help**}
 
 ## OPTIONS
@@ -19,6 +19,10 @@ Sets the fastboot command name.  Must be either a file path or a program in curr
 **-h**, **--help**
 
 Print this usage information and exit.
+
+**-o**, **--omit**=*OMISSIONS*
+
+Omit the comma seperated list of partitions in OMISSIONS.  Items in the list may be either partition names or filenames.  For example -o gpt.bin,boot will omit both the file gpt.bin and the boot partition.  Including this option more than once overrides earlier specifications.  Default is no ommisions: -o ''.
 
 **-p**, **--pretend**
 
@@ -40,13 +44,15 @@ Alias for **-d**
 
 If the program hangs saying *< waiting for device >*, then fastboot cannot locate your phone.  You can hit Ctrl-C to break and then run
 
-    $ fastboot -l
+    $ fastboot -l devices
 
 to list available devices.  Make sure your phone is properly plugged in and that you have satisfied all the dependencies in the next section, including the proper USB drivers if stuck using windows.  If more than one device is plugged in, you can specify which device to flash using the **-d** option.
 
 If you receive errors about missing files, be sure you unzipped the entire rom and that the .xml file is in that directory.
 
 If you receive errors about invalid steps, operations, or MD5 sums, the downloaded rom is invalid and cannot be processed.
+
+If you receive errors about 'Security version downgrade', the issue is that phone has received a newer update than you are flashing (perhaps via an over the air [ota] update).  The proper fix is to download an updated ROM and flash that.  If an updated ROM is not available, you can try flashing the bootloader than then rebooting the device or omitting the problematic partition with -o.  No guarentee that either of these alternate solutions will work.
 
 ## DEPENDENCIES
 

@@ -40,11 +40,18 @@ my $device = '';
 my $fastbootcmd = 'fastboot';
 my $help;
 my $pretend;
+my $omit = '';
 GetOptions("device|d|s=s" => \$device,
 	   "fastboot|f=s" => \$fastbootcmd,
 	   "help|h"       => \$help,
+	   "omit|o=s"     => \$omit,
 	   "pretend|p"    => \$pretend)
     or pod2usage(2);
+
+my %omit;
+foreach my $name (split(/,/, $omit)) {
+    $omit{$name} = 1;
+}
 
 pod2usage(-exitval => 0, -verbose => 3) if $help;
 
@@ -88,20 +95,24 @@ foreach my $step (@steps) {
 	die "Invalid flash step: Missing filename" unless defined($step->{'filename'});
 	my $par = $step->{'partition'};
 	my $file = File::Spec->catpath($vol, $dir, $step->{'filename'});
+	
+	if (defined($omit{$par}) || defined($omit{$file})) {
+	    print "Omitting partition ${par} file ${file}\n";
+	} else {
+	    die "Cannot find file to flash: ${file}" unless -f $file;
 
-	die "Cannot find file to flash: ${file}" unless -f $file;
-
-	if (defined($step->{'MD5'})) {
-	    print "Verifying MD5 sum of ${file}\n";
-	    open(my $fhandle, '<', $file) or die "Cannot open flash file ${file}";
-	    $md5->reset;
-	    $md5->addfile($fhandle);
-	    close($fhandle);
-	    my $act = lc($md5->hexdigest);
-	    my $exp = lc($step->{'MD5'});
-	    die "MD5 digest mismatch on flash file ${file}, expected ${exp}, found ${act}" unless $act eq $exp;
+	    if (defined($step->{'MD5'})) {
+		print "Verifying MD5 sum of ${file}\n";
+		open(my $fhandle, '<', $file) or die "Cannot open flash file ${file}";
+		$md5->reset;
+		$md5->addfile($fhandle);
+		close($fhandle);
+		my $act = lc($md5->hexdigest);
+		my $exp = lc($step->{'MD5'});
+		die "MD5 digest mismatch on flash file ${file}, expected ${exp}, found ${act}" unless $act eq $exp;
+	    }
+	    push @cmds, ['flash', $par, $file];
 	}
-	push @cmds, ['flash', $par, $file];
 	
     ## GETVAR
     } elsif ($op eq 'getvar') {
@@ -137,7 +148,8 @@ Flash a stock rom onto an android phone
 
 =head1 SYNOPSIS
 
-B<stock-flash.pl> [B<-f> I<fastbootcmd>] [B<-s> I<devicepath>] [B<-p>] I<file.xml>
+B<stock-flash.pl> [B<-f> I<fastbootcmd>] [B<-s> I<devicepath>] [B<-o> I<omissions>] [B<-p>] I<file.xml>
+
 B<stock-flash.pl> {B<-h>|B<--help>}
 
 =head1 OPTIONS
@@ -156,10 +168,15 @@ Sets the fastboot command name.  Must be either a file path or a program in curr
 
 Print this usage information and exit.
 
+=item B<-o>, B<--omit>=I<OMISSIONS>
+
+Omit the comma seperated list of partitions in OMISSIONS.  Items in the list may be either partition names or filenames.  For example -o gpt.bin,boot will omit both the file gpt.bin and the boot partition.  Including this option more than once overrides earlier specifications.  Default is no ommisions: -o ''.
+
 =item B<-p>, B<--pretend>
 
 Perform any MD5 checks and print the fastboot that would be called, but don't acctually call fastboot.
 
+Alias for B<-d>
 =item B<-s>=I<DEVICEPATH>
 
 Alias for B<-d>
@@ -185,6 +202,8 @@ to list available devices.  Make sure your phone is properly plugged in and that
 If you receive errors about missing files, be sure you unzipped the entire rom and that the .xml file is in that directory.
 
 If you receive errors about invalid steps, operations, or MD5 sums, the downloaded rom is invalid and cannot be processed.
+
+If you receive errors about 'Security version downgrade', the issue is that phone has received a newer update than you are flashing (perhaps via an over the air [ota] update).  The proper fix is to download an updated ROM and flash that.  If an updated ROM is not available, you can try flashing the bootloader than then rebooting the device or omitting the problematic partition with -o.  No guarentee that either of these alternate solutions will work.
 
 =head1 DEPENDENCIES
 
