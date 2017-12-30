@@ -178,7 +178,7 @@ B<stock-flash.pl> reads the entire xml file, determines all the necessary steps,
 
 If the program hangs saying I<< < waiting for device > >>, then fastboot cannot locate your phone.  You can hit Ctrl-C to break and then run
 
-    $ fastboot -l
+    $ fastboot -l devices
 
 to list available devices.  Make sure your phone is properly plugged in and that you have satisfied all the dependencies in the next section, including the proper USB drivers if stuck using windows.  If more than one device is plugged in, you can specify which device to flash using the B<-d> option.
 
