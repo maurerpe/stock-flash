@@ -104,6 +104,7 @@ foreach my $step (@steps) {
 	    if (defined($step->{'MD5'})) {
 		print "Verifying MD5 sum of ${file}\n";
 		open(my $fhandle, '<', $file) or die "Cannot open flash file ${file}";
+		binmode $fhandle;
 		$md5->reset;
 		$md5->addfile($fhandle);
 		close($fhandle);
